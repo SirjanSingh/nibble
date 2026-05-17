@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="creature.css" />
+</head>
+<body>
+  <div id="stage" class="stage" data-state="sleeping">
+    <div id="bubble" class="bubble hidden"><span id="bubble-text"></span></div>
+
+    <div id="hint" class="hint">click me</div>
+
+    <div id="creature" class="creature" title="Open Nibble dashboard">
+      <svg viewBox="0 0 200 210" id="svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="body" cx="40%" cy="32%" r="75%">
+            <stop offset="0%"  stop-color="var(--c1)"/>
+            <stop offset="60%" stop-color="var(--c2)"/>
+            <stop offset="100%" stop-color="var(--c3)"/>
+          </radialGradient>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="5"/>
+          </filter>
+        </defs>
+
+        <!-- ground shadow -->
+        <ellipse id="shadow" cx="100" cy="188" rx="52" ry="11"
+                 fill="rgba(0,0,0,.30)" filter="url(#soft)"/>
+
+        <!-- antenna -->
+        <g id="antenna">
+          <path d="M100 60 Q104 38 96 22" stroke="var(--c2)"
+                stroke-width="5" fill="none" stroke-linecap="round"/>
+          <circle id="orb" cx="95" cy="19" r="8" fill="var(--accent)"/>
+        </g>
+
+        <!-- body -->
+        <path id="bodyShape" fill="url(#body)"
+          d="M100 56 C150 56 168 96 168 128 C168 168 138 184 100 184
+             C62 184 32 168 32 128 C32 96 50 56 100 56 Z"/>
+        <!-- top sheen -->
+        <ellipse cx="78" cy="92" rx="30" ry="18"
+                 fill="rgba(255,255,255,.28)"/>
+
+        <!-- cheeks -->
+        <ellipse class="cheek" cx="62" cy="138" rx="12" ry="7"/>
+        <ellipse class="cheek" cx="138" cy="138" rx="12" ry="7"/>
+
+        <!-- eyes -->
+        <g id="eyes">
+          <g class="eye" transform="translate(74 122)">
+            <ellipse class="ball" rx="12" ry="14"/>
+            <circle class="pupil" cx="2" cy="2" r="5"/>
+            <circle class="glint" cx="-3" cy="-4" r="2.6"/>
+          </g>
+          <g class="eye" transform="translate(126 122)">
+            <ellipse class="ball" rx="12" ry="14"/>
+            <circle class="pupil" cx="2" cy="2" r="5"/>
+            <circle class="glint" cx="-3" cy="-4" r="2.6"/>
+          </g>
+        </g>
+
+        <!-- mouth -->
+        <path id="mouth" d="M88 152 Q100 160 112 152" stroke="#15202b"
+              stroke-width="4" fill="none" stroke-linecap="round"/>
+
+        <!-- sweat drop (alert) -->
+        <path id="sweat" d="M150 96 q5 9 0 14 a5 5 0 1 1 0 -14 Z"
+              fill="#7fd0f5"/>
+
+        <!-- sleep z's -->
+        <text id="zzz" x="150" y="86" class="zzz">z</text>
+      </svg>
+
+      <div id="badge" class="badge">$0.00</div>
+    </div>
+  </div>
+
+  <script src="ws.js"></script>
+  <script src="creature.js"></script>
+</body>
+</html>
