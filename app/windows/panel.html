@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Nibble</h1>
+          <p>one creature · all your AI tools</p>
+        </div>
+      </div>
+      <span id="conn" class="conn ok">live</span>
+    </header>
+
+    <section class="hero card">
+      <div class="ring" id="ring">
+        <div class="ring-inner">
+          <div class="amount" id="spent">$0.00</div>
+          <div class="amount-sub">today</div>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <div class="kv"><span>Daily budget</span><b id="budget">$0</b></div>
+        <div class="kv"><span>Projected by midnight</span>
+          <b id="proj" class="proj">—</b></div>
+        <div class="kv"><span>Budget used</span>
+          <b id="pct">0%</b></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>By tool · today</h2></div>
+      <div id="tools" class="tools"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Last 14 days</h2>
+        <span id="trend" class="muted"></span></div>
+      <div id="chart" class="chart"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Sources</h2></div>
+      <div id="sources" class="srcgrid"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Settings</h2>
+        <span id="saved" class="saved-tag hidden">Saved ✓</span></div>
+
+      <label class="field">
+        <span>Daily budget (USD)</span>
+        <input id="in-budget" type="number" min="0" step="0.5" />
+      </label>
+
+      <details class="adv">
+        <summary>Connect more tools (optional API keys)</summary>
+        <p class="hint-text">
+          OpenAI &amp; Anthropic usage APIs need an <b>organization
+          admin key</b>. Without them, Nibble still tracks Claude Code
+          locally. Keys are stored in your OS keyring — never in the
+          database, never sent anywhere.
+        </p>
+        <label class="field"><span>OpenAI admin key</span>
+          <input id="in-openai" type="password" /></label>
+        <label class="field"><span>Anthropic admin key</span>
+          <input id="in-anthropic" type="password" /></label>
+        <label class="check">
+          <input id="in-commentary" type="checkbox" />
+          <span>Smart anomaly commentary <i>(one tiny Anthropic call
+          only when spend spikes)</i></span>
+        </label>
+        <label class="field"><span>Anthropic key for commentary</span>
+          <input id="in-comkey" type="password" /></label>
+      </details>
+
+      <button id="save">Save settings</button>
+    </section>
+
+    <footer>Local-first · your data never leaves this machine</footer>
+  </div>
+
+  <script src="ws.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
