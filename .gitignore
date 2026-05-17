@@ -1,0 +1,30 @@
+# Planning / design / memory — local only, never pushed (user instruction)
+docs/
+*.local.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Node / Electron
+app/node_modules/
+app/dist/
+app/out/
+npm-debug.log*
+
+# Data / secrets
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+nibble.db*
+.env
+
+# OS
+Thumbs.db
+.DS_Store
