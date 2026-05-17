@@ -141,6 +141,19 @@ class Store:
             ).fetchone()
         return float(row["c"])
 
+    def tool_models_since(self, tool: str, since_utc_iso: str):
+        with self._cur() as cur:
+            rows = cur.execute(
+                """SELECT model, COUNT(*) n,
+                          SUM(cost_usd) cost,
+                          SUM(input_tokens+output_tokens) tokens
+                   FROM usage
+                   WHERE tool=? AND ts_utc >= ?
+                   GROUP BY model ORDER BY cost DESC""",
+                (tool, since_utc_iso),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def daily_costs(self, days: int = 14):
         with self._cur() as cur:
             rows = cur.execute(

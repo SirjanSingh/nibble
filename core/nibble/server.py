@@ -72,6 +72,14 @@ def create_app(store: Store, token: str, hub: Hub) -> FastAPI:
             "daily": store.daily_costs(14),
         }
 
+    @app.get("/api/tool/{tool}", dependencies=[Depends(auth)])
+    def tool_detail(tool: str):
+        from .budget import _local_midnight_utc_iso
+
+        since = _local_midnight_utc_iso()
+        return {"tool": tool, "since": since,
+                "models": store.tool_models_since(tool, since)}
+
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings():
         return {
