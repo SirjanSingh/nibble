@@ -47,7 +47,7 @@ function api(method, p, body) {
 function createCreature() {
   const { width } = screen.getPrimaryDisplay().workAreaSize;
   creatureWin = new BrowserWindow({
-    width: 260, height: 280, x: width - 300, y: 90,
+    width: 340, height: 500, x: width - 380, y: 70,
     frame: false, transparent: true, resizable: false,
     alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
     webPreferences: { preload: path.join(__dirname, "preload.js") },
@@ -88,6 +88,8 @@ function buildTray() {
 
 ipcMain.handle("core-info", () => core);
 ipcMain.handle("get-summary", () => api("GET", "/api/summary"));
+ipcMain.handle("get-tool", (_e, t) =>
+  api("GET", "/api/tool/" + encodeURIComponent(t)));
 ipcMain.handle("get-settings", () => api("GET", "/api/settings"));
 ipcMain.handle("save-settings", (_e, p) => api("POST", "/api/settings", p));
 ipcMain.on("open-panel", openPanel);

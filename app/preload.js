@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("nibble", {
   coreInfo: () => ipcRenderer.invoke("core-info"),
   // request/response helpers proxied through main (no socket reuse)
   getSummary: () => ipcRenderer.invoke("get-summary"),
+  getTool: (t) => ipcRenderer.invoke("get-tool", t),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   saveSettings: (p) => ipcRenderer.invoke("save-settings", p),
   // renderer -> main: keep tray tooltip / notifications in sync
