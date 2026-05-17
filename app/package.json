@@ -1,0 +1,25 @@
+{
+  "name": "nibble",
+  "version": "0.1.0",
+  "description": "Nibble — one creature, all your AI tools",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "author": "SirjanSingh",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "dev.sirjan.nibble",
+    "productName": "Nibble",
+    "files": ["**/*", "!**/*.md"],
+    "extraResources": [
+      { "from": "../core/dist/nibble-core", "to": "nibble-core" }
+    ],
+    "win": { "target": "nsis" }
+  }
+}
