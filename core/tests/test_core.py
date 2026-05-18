@@ -146,6 +146,87 @@ def test_session_is_claude_only(store):
     assert st.session_spent == 4.0          # openai excluded from 5h session
 
 
+def test_governor_panic_and_tiers(store):
+    from nibble.governor import Governor, tool_is_dangerous
+
+    g = Governor(store)
+    assert tool_is_dangerous("Bash") and tool_is_dangerous("mcp__x__write")
+    assert not tool_is_dangerous("Read")
+
+    n = Governor.normalize({"hook_event_name": "PreToolUse",
+                            "tool_name": "Bash", "session_id": "s1",
+                            "tool_input": {"command": "ls"}})
+    assert g.decide_static(n).action == "allow"      # autopilot default
+    g.set_panic(True)
+    assert g.decide_static(n).action == "deny"
+    g.set_panic(False)
+
+
+def test_governor_policy_and_failsafe(store):
+    from nibble.governor import Governor
+    import json as _j
+
+    g = Governor(store)
+    store.add_policy("no rm -rf", _j.dumps(
+        {"tool": "Bash", "command_regex": r"rm\s+-rf"}), "deny",
+        "destructive")
+    danger = Governor.normalize({"hook_event_name": "PreToolUse",
+        "tool_name": "Bash", "session_id": "s",
+        "tool_input": {"command": "rm -rf build"}})
+    safe = Governor.normalize({"hook_event_name": "PreToolUse",
+        "tool_name": "Bash", "session_id": "s",
+        "tool_input": {"command": "ls -la"}})
+    assert g.decide_static(danger).action == "deny"
+    assert g.decide_static(safe).action == "allow"
+    # fail-safe: dangerous denies, safe allows
+    assert g.failsafe(danger).action == "deny"
+    assert g.failsafe(Governor.normalize({"hook_event_name": "PreToolUse",
+        "tool_name": "Read", "session_id": "s"})).action == "allow"
+
+
+def test_governor_supervise_and_caps(store):
+    from nibble.governor import Governor
+    from nibble import budget as b
+
+    g = Governor(store)
+    store.upsert_session("sx", "claude_code", "/tmp", "2026-05-19T00:00:00Z")
+    store.set_session_mode("sx", "supervise")
+    n = Governor.normalize({"hook_event_name": "PreToolUse",
+        "tool_name": "Bash", "session_id": "sx",
+        "tool_input": {"command": "echo hi"}})
+    assert g.decide_static(n).action == "ask"
+
+    store.set_cap("today", 1.0, None)
+    store.upsert_many([Record(ts_utc=b._local_midnight_utc_iso(),
+        tool="claude_code", model="claude-opus-4", cost_usd=5.0,
+        raw_hash="capx")])
+    assert g.check_caps(n).action == "deny"
+
+
+def test_hooks_install_roundtrip(tmp_path, monkeypatch):
+    sp = tmp_path / "settings.json"
+    sp.write_text('{"hooks":{"PreToolUse":[{"matcher":"Bash",'
+                  '"hooks":[{"type":"command","command":"echo hi"}]}]}}',
+                  encoding="utf-8")
+    monkeypatch.setenv("NIBBLE_CLAUDE_SETTINGS", str(sp))
+    from nibble import hooks_install as hi
+    import importlib
+    importlib.reload(hi)
+
+    assert hi.status()["installed"] is False
+    hi.install()
+    st = hi.status()
+    assert st["installed"] is True and st["backup_exists"] is True
+    import json as _j
+    data = _j.loads(sp.read_text())
+    # user's original Bash hook preserved, Nibble appended LAST
+    pre = data["hooks"]["PreToolUse"]
+    assert pre[0]["hooks"][0]["command"] == "echo hi"
+    assert pre[-1]["_nibble"] == hi.SENTINEL
+    hi.uninstall()
+    assert hi.status()["installed"] is False
+
+
 def test_budget_default_when_unset(store):
     from nibble import budget as b
     st = b.compute(store)
