@@ -64,12 +64,12 @@ def create_app(store: Store, token: str, hub: Hub) -> FastAPI:
 
     @app.get("/api/summary", dependencies=[Depends(auth)])
     def summary():
-        from .budget import as_dict, compute
+        from .budget import as_dict, compute, local_daily
 
         b = compute(store)
         return {
             "budget": as_dict(b),
-            "daily": store.daily_costs(14),
+            "daily": local_daily(store, 14),
         }
 
     @app.get("/api/tool/{tool}", dependencies=[Depends(auth)])

@@ -27,7 +27,9 @@ class Anomaly:
 
 
 def detect(store: Store, spent_today: float) -> Optional[Anomaly]:
-    rows = store.daily_costs(days=15)
+    from .budget import local_daily
+
+    rows = local_daily(store, days=15)
     # rows[0] is today (partial); use prior complete days as baseline.
     prior = [r["cost"] for r in rows[1:] if r["cost"] is not None]
     prior = [c for c in prior if c > 0]
