@@ -2,17 +2,36 @@
 
 # 🐡 Nibble
 
-### One creature, all your AI tools. Know what you're actually spending.
+### A local governor + spend tracker for your Claude Code agents.
 
-Nibble is a **local-first** desktop app that aggregates your AI usage cost
-across every tool into a single dollar figure — surfaced through a system-tray
-app and a friendly always-on-top creature that reacts to your spend.
+Nibble **governs** your Claude Code sessions (supervise / policy / budget
+caps / panic — all local) and tracks AI spend across tools in one figure.
 
 **No account. No cloud. No telemetry.** Everything stays on your machine.
 
 `Python core` · `Electron UI` · `SQLite` · `MIT`
 
 </div>
+
+## Conductor — the control surface
+
+One hook installed into your global Claude Code settings governs **every**
+session automatically (no per-session opt-in to forget):
+
+- **Per-session mode** — *supervise* (Claude Code pauses; you allow/deny/
+  instruct from the cockpit) or *autopilot* (rules decide silently).
+- **Guardrails** — reusable rules (e.g. deny `Bash` matching `rm\s+-rf`).
+  First match wins.
+- **Budget caps as hard gates** — auto-deny when the daily or rolling 5h
+  Claude spend cap is breached.
+- **Panic** — one click denies everything across all sessions.
+- **Fail-safe** — if the core can't answer in time: safe/read tools
+  fail-open, mutating/dangerous fail-closed (configurable).
+- Your existing Claude Code hooks are preserved; Nibble's runs **last** and
+  Claude Code blocks if *any* hook denies (most-restrictive wins).
+
+Tray → **Open Conductor** → **Install**, then run Claude Code normally.
+Uninstall restores `settings.json` (a backup is written first).
 
 ---
 
