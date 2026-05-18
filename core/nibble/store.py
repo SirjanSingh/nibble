@@ -29,6 +29,32 @@ CREATE INDEX IF NOT EXISTS idx_usage_ts ON usage(ts_utc);
 CREATE INDEX IF NOT EXISTS idx_usage_tool ON usage(tool);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    source TEXT, cwd TEXT,
+    started_at TEXT, last_seen TEXT,
+    mode TEXT DEFAULT 'autopilot',
+    status TEXT DEFAULT 'active'
+);
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sid TEXT, ts TEXT, event TEXT, tool TEXT,
+    summary TEXT, decision TEXT, reason TEXT, decided_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
+CREATE TABLE IF NOT EXISTS policies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    idx INTEGER DEFAULT 0,
+    enabled INTEGER DEFAULT 1,
+    label TEXT,
+    match_json TEXT,
+    action TEXT,
+    reason TEXT
+);
+CREATE TABLE IF NOT EXISTS caps (
+    scope TEXT PRIMARY KEY,
+    limit_usd REAL, limit_tokens INTEGER
+);
 """
 
 
@@ -195,6 +221,104 @@ class Store:
                    FROM usage GROUP BY d ORDER BY d DESC LIMIT ?""",
                 (days,),
             ).fetchall()
+        return [dict(r) for r in rows]
+
+    # ---- governor: sessions / events / policies / caps -----------------
+    def upsert_session(self, sid, source, cwd, ts):
+        with self._cur() as cur:
+            cur.execute(
+                """INSERT INTO sessions(sid,source,cwd,started_at,last_seen)
+                   VALUES(?,?,?,?,?)
+                   ON CONFLICT(sid) DO UPDATE SET last_seen=excluded.last_seen,
+                     status='active'""",
+                (sid, source, cwd, ts, ts),
+            )
+
+    def set_session_mode(self, sid, mode):
+        with self._cur() as cur:
+            cur.execute("UPDATE sessions SET mode=? WHERE sid=?", (mode, sid))
+
+    def set_session_status(self, sid, status, ts):
+        with self._cur() as cur:
+            cur.execute(
+                "UPDATE sessions SET status=?, last_seen=? WHERE sid=?",
+                (status, ts, sid),
+            )
+
+    def get_session(self, sid):
+        with self._cur() as cur:
+            r = cur.execute(
+                "SELECT * FROM sessions WHERE sid=?", (sid,)
+            ).fetchone()
+        return dict(r) if r else None
+
+    def list_sessions(self, limit=50):
+        with self._cur() as cur:
+            rows = cur.execute(
+                "SELECT * FROM sessions ORDER BY last_seen DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def add_event(self, sid, ts, event, tool, summary, decision, reason, by):
+        with self._cur() as cur:
+            cur.execute(
+                """INSERT INTO events
+                   (sid,ts,event,tool,summary,decision,reason,decided_by)
+                   VALUES(?,?,?,?,?,?,?,?)""",
+                (sid, ts, event, tool, summary, decision, reason, by),
+            )
+
+    def recent_events(self, limit=40):
+        with self._cur() as cur:
+            rows = cur.execute(
+                "SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def list_policies(self):
+        with self._cur() as cur:
+            rows = cur.execute(
+                "SELECT * FROM policies ORDER BY idx ASC, id ASC"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def add_policy(self, label, match_json, action, reason, idx=0):
+        with self._cur() as cur:
+            cur.execute(
+                """INSERT INTO policies(idx,enabled,label,match_json,
+                   action,reason) VALUES(?,?,?,?,?,?)""",
+                (idx, 1, label, match_json, action, reason),
+            )
+
+    def update_policy(self, pid, **f):
+        if not f:
+            return
+        cols = ", ".join(f"{k}=?" for k in f)
+        with self._cur() as cur:
+            cur.execute(
+                f"UPDATE policies SET {cols} WHERE id=?",
+                (*f.values(), pid),
+            )
+
+    def delete_policy(self, pid):
+        with self._cur() as cur:
+            cur.execute("DELETE FROM policies WHERE id=?", (pid,))
+
+    def set_cap(self, scope, limit_usd, limit_tokens):
+        with self._cur() as cur:
+            cur.execute(
+                """INSERT INTO caps(scope,limit_usd,limit_tokens)
+                   VALUES(?,?,?)
+                   ON CONFLICT(scope) DO UPDATE SET
+                     limit_usd=excluded.limit_usd,
+                     limit_tokens=excluded.limit_tokens""",
+                (scope, limit_usd, limit_tokens),
+            )
+
+    def list_caps(self):
+        with self._cur() as cur:
+            rows = cur.execute("SELECT * FROM caps").fetchall()
         return [dict(r) for r in rows]
 
     def close(self):
