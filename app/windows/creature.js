@@ -59,7 +59,7 @@ function renderMini() {
     const rs = m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
     sess.style.display = "flex";
     sess.innerHTML =
-      `<span class="lab">5h session</span>` +
+      `<span class="lab">Claude 5h</span>` +
       `<span class="det"><b>$${(last.session_spent || 0).toFixed(2)}</b>` +
       ` · ${(last.session_tokens || 0).toLocaleString()} tok` +
       ` · resets ${rs}</span>`;

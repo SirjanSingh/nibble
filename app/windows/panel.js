@@ -23,6 +23,17 @@ function renderState(s) {
     p.className = "proj " + (s.on_track ? "good" : "bad");
   }
 
+  const kvS = $("kv-sess");
+  if (s.session_active) {
+    const m = s.session_resets_in_min || 0;
+    const rs = m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+    $("sess").textContent =
+      `$${(s.session_spent || 0).toFixed(2)} · resets ${rs}`;
+    kvS.style.display = "flex";
+  } else if (s.session_active === false) {
+    kvS.style.display = "none";
+  }
+
   // tools with relative bars
   const tools = (s.per_tool || []).filter((t) => t.cost != null);
   const max = Math.max(0.0001, ...tools.map((t) => t.cost));
