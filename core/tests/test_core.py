@@ -113,6 +113,39 @@ def test_session_window(store):
     assert 0 < st.session_resets_in_min <= 5 * 60
 
 
+def test_local_daily_buckets_today(store):
+    from nibble import budget as b
+
+    store.upsert_many([
+        Record(ts_utc=b._local_midnight_utc_iso(), tool="claude_code",
+               model="claude-opus-4", cost_usd=3.5, raw_hash="ld1"),
+    ])
+    rows = b.local_daily(store, days=14)
+    assert len(rows) == 14
+    from datetime import datetime
+    today = datetime.now().astimezone().date().isoformat()
+    assert rows[0]["d"] == today
+    assert rows[0]["cost"] == 3.5
+
+
+def test_session_is_claude_only(store):
+    from datetime import datetime, timedelta, timezone
+    from nibble import budget as b
+
+    recent = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
+    store.upsert_many([
+        Record(ts_utc=recent, tool="claude_code", model="claude-opus-4",
+               input_tokens=10, output_tokens=10, cost_usd=4.0,
+               raw_hash="cs1"),
+        Record(ts_utc=recent, tool="openai", model="gpt-4o",
+               cost_usd=99.0, raw_hash="cs2"),
+    ])
+    st = b.compute(store)
+    assert st.session_active is True
+    assert st.session_spent == 4.0          # openai excluded from 5h session
+
+
 def test_budget_default_when_unset(store):
     from nibble import budget as b
     st = b.compute(store)

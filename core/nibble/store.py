@@ -141,25 +141,39 @@ class Store:
             ).fetchone()
         return float(row["c"])
 
-    def first_ts_since(self, since_utc_iso: str):
+    def first_ts_since(self, since_utc_iso: str, tool: str | None = None):
+        q = "SELECT MIN(ts_utc) m FROM usage WHERE ts_utc >= ?"
+        args = [since_utc_iso]
+        if tool:
+            q += " AND tool = ?"
+            args.append(tool)
         with self._cur() as cur:
-            row = cur.execute(
-                "SELECT MIN(ts_utc) m FROM usage WHERE ts_utc >= ?",
-                (since_utc_iso,),
-            ).fetchone()
+            row = cur.execute(q, args).fetchone()
         return row["m"] if row and row["m"] else None
 
-    def window_summary(self, since_utc_iso: str) -> dict:
+    def window_summary(self, since_utc_iso: str,
+                       tool: str | None = None) -> dict:
+        q = ("""SELECT COALESCE(SUM(cost_usd),0) cost,
+                       COALESCE(SUM(input_tokens+output_tokens),0) tokens,
+                       COUNT(*) n
+                FROM usage WHERE ts_utc >= ?""")
+        args = [since_utc_iso]
+        if tool:
+            q += " AND tool = ?"
+            args.append(tool)
         with self._cur() as cur:
-            row = cur.execute(
-                """SELECT COALESCE(SUM(cost_usd),0) cost,
-                          COALESCE(SUM(input_tokens+output_tokens),0) tokens,
-                          COUNT(*) n
-                   FROM usage WHERE ts_utc >= ?""",
-                (since_utc_iso,),
-            ).fetchone()
+            row = cur.execute(q, args).fetchone()
         return {"cost": float(row["cost"]), "tokens": int(row["tokens"]),
                 "requests": int(row["n"])}
+
+    def costs_rows_since(self, since_utc_iso: str):
+        """Raw (ts_utc, cost) since a bound, for local-day bucketing."""
+        with self._cur() as cur:
+            rows = cur.execute(
+                "SELECT ts_utc, cost_usd FROM usage WHERE ts_utc >= ?",
+                (since_utc_iso,),
+            ).fetchall()
+        return [(r["ts_utc"], float(r["cost_usd"])) for r in rows]
 
     def tool_models_since(self, tool: str, since_utc_iso: str):
         with self._cur() as cur:

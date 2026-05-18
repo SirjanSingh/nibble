@@ -64,11 +64,12 @@ def _session(store: Store) -> dict:
     win_start = (now - timedelta(hours=SESSION_HOURS)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
-    first = store.first_ts_since(win_start)
+    # Claude's 5h quota is Claude-Code-specific — scope to that tool only.
+    first = store.first_ts_since(win_start, tool="claude_code")
     if not first:
         return {"spent": 0.0, "tokens": 0, "resets_in_min": 0,
                 "active": False}
-    summ = store.window_summary(first)
+    summ = store.window_summary(first, tool="claude_code")
     first_dt = _parse_iso(first) or now
     resets_at = first_dt + timedelta(hours=SESSION_HOURS)
     remaining = max(0, int((resets_at - now).total_seconds() // 60))
@@ -78,6 +79,30 @@ def _session(store: Store) -> dict:
         "resets_in_min": remaining,
         "active": True,
     }
+
+
+def local_daily(store: Store, days: int = 14) -> list:
+    """Daily costs bucketed by the user's LOCAL calendar day (consistent
+    with the local-midnight "today" figure). SQLite date funcs can't parse
+    the trailing 'Z', so bucket in Python."""
+    now = datetime.now().astimezone()
+    off = now.utcoffset() or timedelta(0)
+    start_local = (now - timedelta(days=days - 1)).replace(
+        hour=0, minute=0, second=0, microsecond=0)
+    since_iso = start_local.astimezone(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
+    buckets: dict[str, float] = {}
+    for ts, cost in store.costs_rows_since(since_iso):
+        dt = _parse_iso(ts)
+        if not dt:
+            continue
+        local_date = (dt + off).date().isoformat()
+        buckets[local_date] = buckets.get(local_date, 0.0) + cost
+    out = []
+    for i in range(days):
+        d = (now - timedelta(days=i)).date().isoformat()
+        out.append({"d": d, "cost": round(buckets.get(d, 0.0), 6)})
+    return out                       # newest-first (matches old daily_costs)
 
 
 def compute(store: Store) -> BudgetState:
