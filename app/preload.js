@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("nibble", {
   saveSettings: (p) => ipcRenderer.invoke("save-settings", p),
   // renderer -> main: keep tray tooltip / notifications in sync
   reportState: (s) => ipcRenderer.send("tray-state", s),
+  setInteractive: (on) => ipcRenderer.send("set-interactive", on),
   openPanel: () => ipcRenderer.send("open-panel"),
   openExternal: (url) => ipcRenderer.send("open-external", url),
 });

@@ -54,6 +54,10 @@ function createCreature() {
   });
   creatureWin.setAlwaysOnTop(true, "screen-saver");
   creatureWin.setVisibleOnAllWorkspaces(true);
+  // Start click-through: the transparent window must not block the desktop
+  // behind it. `forward:true` still delivers mousemove to the renderer so it
+  // can hit-test the sprite and flip interactivity on/off.
+  creatureWin.setIgnoreMouseEvents(true, { forward: true });
   creatureWin.loadFile("windows/creature.html");
   creatureWin.on("closed", () => (creatureWin = null));
 }
@@ -92,6 +96,11 @@ ipcMain.handle("get-tool", (_e, t) =>
   api("GET", "/api/tool/" + encodeURIComponent(t)));
 ipcMain.handle("get-settings", () => api("GET", "/api/settings"));
 ipcMain.handle("save-settings", (_e, p) => api("POST", "/api/settings", p));
+ipcMain.on("set-interactive", (_e, on) => {
+  if (creatureWin && !creatureWin.isDestroyed()) {
+    creatureWin.setIgnoreMouseEvents(!on, { forward: true });
+  }
+});
 ipcMain.on("open-panel", openPanel);
 ipcMain.on("open-external", (_e, url) => shell.openExternal(url));
 ipcMain.on("tray-state", (_e, s) => {

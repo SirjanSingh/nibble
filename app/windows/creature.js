@@ -53,6 +53,20 @@ function renderMini() {
   document.getElementById("m-ring").style.setProperty(
     "--mp", Math.min(100, pct));
 
+  const sess = document.getElementById("m-sess");
+  if (last.session_active) {
+    const m = last.session_resets_in_min || 0;
+    const rs = m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+    sess.style.display = "flex";
+    sess.innerHTML =
+      `<span class="lab">5h session</span>` +
+      `<span class="det"><b>$${(last.session_spent || 0).toFixed(2)}</b>` +
+      ` · ${(last.session_tokens || 0).toLocaleString()} tok` +
+      ` · resets ${rs}</span>`;
+  } else {
+    sess.style.display = "none";
+  }
+
   const tools = (last.per_tool || []).filter((t) => t.cost != null);
   if (!tools.length) {
     mList.innerHTML = `<div class="mini-empty">No AI spend yet today.</div>`;
@@ -142,5 +156,29 @@ document.getElementById("m-open").addEventListener("click", (e) => {
 
 setTimeout(() => { if (!interacted) hint.classList.add("show"); }, 2500);
 setTimeout(() => hint.classList.remove("show"), 11000);
+
+// ---- click-through hit-test ----
+// The window starts ignoring the mouse (so the desktop behind the
+// transparent area stays clickable). `forward:true` still delivers
+// mousemove here; when the cursor is genuinely over the sprite / grip /
+// open panel / bubble, ask main to capture the mouse so clicks land.
+let interactive = false;
+const HOT = "#creature, #grip, #mini:not(.hidden), #bubble:not(.hidden)";
+function overHot(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return !!(el && el.closest(HOT));
+}
+function setInteractive(on) {
+  if (on === interactive) return;
+  interactive = on;
+  window.nibble.setInteractive(on);
+}
+window.addEventListener("mousemove", (e) => {
+  setInteractive(overHot(e.clientX, e.clientY));
+});
+window.addEventListener("mouseout", (e) => {
+  if (!e.relatedTarget && !e.toElement) setInteractive(false);
+});
+window.addEventListener("blur", () => setInteractive(false));
 
 window.NibbleWS.start(applyState, () => setState("reconnecting"));
