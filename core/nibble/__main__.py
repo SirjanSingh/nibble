@@ -22,6 +22,11 @@ from .store import Store
 
 
 def main(argv=None):
+    raw = sys.argv[1:] if argv is None else argv
+    if "--hook" in raw:
+        from .hook import main as hook_main
+        return hook_main()
+
     ap = argparse.ArgumentParser(prog="nibble")
     ap.add_argument("--port", type=int, default=0,
                     help="loopback port (0 = let OS pick)")
@@ -33,7 +38,9 @@ def main(argv=None):
     token = args.token or pysecrets.token_urlsafe(24)
     store = Store()
     hub = Hub()
-    app = create_app(store, token, hub)
+    from .governor import Governor
+    governor = Governor(store)
+    app = create_app(store, token, hub, governor)
 
     config = uvicorn.Config(
         app, host=args.host, port=args.port, log_level="warning",
@@ -51,6 +58,19 @@ def main(argv=None):
         while not server.started:
             await asyncio.sleep(0.05)
         bound = server.servers[0].sockets[0].getsockname()
+        # Connection file so the Claude Code hook (launched by Claude,
+        # not Electron) can find the loopback port + token.
+        try:
+            import json as _json
+
+            from . import config as _cfg
+            (_cfg.data_dir() / "conductor.json").write_text(
+                _json.dumps({"port": bound[1], "token": token,
+                             "protocol": "1"}),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
         print(
             f"NIBBLE_READY port={bound[1]} token={token}",
             flush=True,
