@@ -13,12 +13,26 @@ html, body {
   position: absolute; left: 50%; bottom: 6px;
   transform: translateX(-50%);
   width: 200px; height: 210px;
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;          /* clickable (drag swallows clicks) */
+  z-index: 1;
   cursor: pointer;
   transition: transform .18s ease;
 }
 .creature:hover { transform: translateX(-50%) scale(1.05); }
-.creature:active { cursor: grabbing; }
+.creature:active { transform: translateX(-50%) scale(.97); }
+
+/* dedicated drag handle so the pet stays movable */
+.grip {
+  position: absolute; top: 4px; left: 50%;
+  transform: translateX(-50%);
+  width: 44px; height: 13px; border-radius: 7px;
+  background: rgba(255,255,255,.16);
+  -webkit-app-region: drag; cursor: move;
+  opacity: 0; transition: opacity .2s; z-index: 6;
+}
+body:hover .grip { opacity: .45; }
+.grip:hover { opacity: .9; }
+.stage.mini-open .grip { display: none; }
 #svg { width: 100%; height: 100%; overflow: visible; }
 
 /* color theme per state (drives the body gradient + antenna orb) */
@@ -125,6 +139,7 @@ html, body {
   border-radius: 16px; padding: 13px 14px;
   box-shadow: 0 16px 38px rgba(0,0,0,.5);
   color: #e4edf6; backdrop-filter: blur(4px);
+  z-index: 10;
   transform-origin: 50% 100%;
   transition: opacity .2s, transform .2s;
 }

@@ -121,8 +121,10 @@ function toggleMini() {
     bubble.classList.add("hidden");
     renderMini();
     mini.classList.remove("hidden");
+    stage.classList.add("mini-open");
   } else {
     mini.classList.add("hidden");
+    stage.classList.remove("mini-open");
     openTool = null;
   }
 }
@@ -135,6 +137,7 @@ document.getElementById("m-open").addEventListener("click", (e) => {
   e.stopPropagation();
   window.nibble.openPanel();
   mini.classList.add("hidden");
+  stage.classList.remove("mini-open");
 });
 
 setTimeout(() => { if (!interacted) hint.classList.add("show"); }, 2500);
