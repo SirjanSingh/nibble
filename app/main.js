@@ -9,6 +9,7 @@ const { Sidecar } = require("./sidecar");
 let tray = null;
 let creatureWin = null;
 let panelWin = null;
+let cockpitWin = null;
 let sidecar = null;
 let core = { port: 0, token: "" };
 let lastSpent = 0;
@@ -74,9 +75,22 @@ function openPanel() {
   panelWin.on("closed", () => (panelWin = null));
 }
 
+function openCockpit() {
+  if (cockpitWin) { cockpitWin.show(); cockpitWin.focus(); return; }
+  cockpitWin = new BrowserWindow({
+    width: 880, height: 760, resizable: true, title: "Nibble Conductor",
+    backgroundColor: "#0c1118", minWidth: 680, minHeight: 560,
+    webPreferences: { preload: path.join(__dirname, "preload.js") },
+  });
+  cockpitWin.removeMenu();
+  cockpitWin.loadFile("windows/cockpit.html");
+  cockpitWin.on("closed", () => (cockpitWin = null));
+}
+
 function buildTray() {
   tray = new Tray(path.join(__dirname, "assets", "tray.png"));
   tray.setContextMenu(Menu.buildFromTemplate([
+    { label: "Open Conductor", click: openCockpit },
     { label: "Open dashboard", click: openPanel },
     { label: "Show / hide creature", click: () => {
         if (!creatureWin) createCreature();
@@ -102,7 +116,27 @@ ipcMain.on("set-interactive", (_e, on) => {
   }
 });
 ipcMain.on("open-panel", openPanel);
+ipcMain.on("open-cockpit", openCockpit);
 ipcMain.on("open-external", (_e, url) => shell.openExternal(url));
+
+ipcMain.handle("cond-snapshot", () => api("GET", "/api/conductor"));
+ipcMain.handle("cond-gate", (_e, { gid, action, reason }) =>
+  api("POST", "/api/gate/" + encodeURIComponent(gid), { action, reason }));
+ipcMain.handle("cond-panic", (_e, on) => api("POST", "/api/panic", { on }));
+ipcMain.handle("cond-session-mode", (_e, { sid, mode }) =>
+  api("POST", "/api/session/" + encodeURIComponent(sid) + "/mode",
+      { mode }));
+ipcMain.handle("cond-policy-add", (_e, p) => api("POST", "/api/policies", p));
+ipcMain.handle("cond-policy-patch", (_e, { pid, p }) =>
+  api("PATCH", "/api/policies/" + pid, p));
+ipcMain.handle("cond-policy-del", (_e, pid) =>
+  api("DELETE", "/api/policies/" + pid));
+ipcMain.handle("cond-cap", (_e, c) => api("POST", "/api/caps", c));
+ipcMain.handle("cond-hooks-status", () => api("GET", "/api/hooks/status"));
+ipcMain.handle("cond-hooks-install", () =>
+  api("POST", "/api/hooks/install"));
+ipcMain.handle("cond-hooks-uninstall", () =>
+  api("POST", "/api/hooks/uninstall"));
 ipcMain.on("tray-state", (_e, s) => {
   if (!s || typeof s.spent_today !== "number") return;
   lastSpent = s.spent_today;

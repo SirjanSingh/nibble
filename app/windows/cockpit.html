@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="cockpit.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo"></div>
+        <div><h1>Nibble Conductor</h1>
+          <p>local governor for your Claude Code sessions</p></div>
+      </div>
+      <div class="hdr-actions">
+        <span id="conn" class="conn off">connecting…</span>
+        <button id="panic" class="panic">PANIC · stop all</button>
+      </div>
+    </header>
+
+    <section class="card hookbar">
+      <div>
+        <b>Always-on hook</b>
+        <span id="hook-state" class="muted">checking…</span>
+      </div>
+      <div>
+        <button id="hook-install" class="btn">Install</button>
+        <button id="hook-uninstall" class="btn ghost">Uninstall</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Pending decisions</h2>
+        <span id="pend-count" class="muted">0</span></div>
+      <div id="gates" class="gates"><div class="empty">Nothing waiting.</div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Sessions</h2></div>
+      <div id="sessions" class="sessions"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Guardrails</h2></div>
+      <div id="policies" class="policies"></div>
+      <div class="pol-add">
+        <input id="p-label" placeholder="label" />
+        <input id="p-tool" placeholder="tool (e.g. Bash) — optional" />
+        <input id="p-cmd" placeholder="command regex — optional" />
+        <select id="p-action">
+          <option value="deny">deny</option>
+          <option value="allow">allow</option>
+          <option value="ask">ask</option>
+        </select>
+        <input id="p-reason" placeholder="reason" />
+        <button id="p-add" class="btn">Add rule</button>
+      </div>
+    </section>
+
+    <section class="card caps">
+      <div class="card-h"><h2>Budget caps (auto-deny on breach)</h2></div>
+      <label>Daily $ <input id="cap-today" type="number" step="1" min="0" /></label>
+      <label>5h session $ <input id="cap-5h" type="number" step="1" min="0" /></label>
+      <button id="cap-save" class="btn">Save caps</button>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Recent activity</h2></div>
+      <div id="events" class="events"></div>
+    </section>
+  </div>
+  <script src="ws.js"></script>
+  <script src="cockpit.js"></script>
+</body>
+</html>

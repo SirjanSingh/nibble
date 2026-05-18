@@ -10,6 +10,7 @@
   let graceTimer = null;
   let stateCb = () => {};
   let reconnCb = () => {};
+  let condCb = () => {};
   let info = null;
 
   async function ensureInfo() {
@@ -40,7 +41,9 @@
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data);
-        if (msg && msg.type === "state") { clearGrace(); stateCb(msg); }
+        if (!msg) return;
+        if (msg.type === "state") { clearGrace(); stateCb(msg); }
+        else if (msg.type === "conductor") { clearGrace(); condCb(msg); }
       } catch (_) {}
     };
     ws.onclose = () => {
@@ -59,9 +62,10 @@
   });
 
   window.NibbleWS = {
-    start(onState, onReconnecting) {
+    start(onState, onReconnecting, onConductor) {
       stateCb = onState || stateCb;
       reconnCb = onReconnecting || reconnCb;
+      condCb = onConductor || condCb;
       connect();
     },
   };
