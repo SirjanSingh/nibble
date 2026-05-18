@@ -159,7 +159,17 @@ body:hover .grip { opacity: .45; }
 }
 .mini-ring span { background:#0e141c; width:34px; height:34px;
   border-radius:50%; display:grid; place-items:center; }
-.mini-list { margin: 9px 0 4px; max-height: 220px; overflow-y: auto; }
+.mini-sess {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin: 10px 0 2px; padding: 8px 10px;
+  background: rgba(87,182,230,.10);
+  border: 1px solid rgba(87,182,230,.22);
+  border-radius: 9px; font-size: 12px;
+}
+.mini-sess .lab { color: #8fd0f0; font-weight: 700; }
+.mini-sess .det { color: #9fb0c2; }
+.mini-sess b { color: #cfeeff; }
+.mini-list { margin: 9px 0 4px; max-height: 200px; overflow-y: auto; }
 .mini-row {
   display: flex; align-items: center; gap: 8px; padding: 8px 4px;
   border-bottom: 1px solid rgba(255,255,255,.05); cursor: pointer;

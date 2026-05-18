@@ -141,6 +141,26 @@ class Store:
             ).fetchone()
         return float(row["c"])
 
+    def first_ts_since(self, since_utc_iso: str):
+        with self._cur() as cur:
+            row = cur.execute(
+                "SELECT MIN(ts_utc) m FROM usage WHERE ts_utc >= ?",
+                (since_utc_iso,),
+            ).fetchone()
+        return row["m"] if row and row["m"] else None
+
+    def window_summary(self, since_utc_iso: str) -> dict:
+        with self._cur() as cur:
+            row = cur.execute(
+                """SELECT COALESCE(SUM(cost_usd),0) cost,
+                          COALESCE(SUM(input_tokens+output_tokens),0) tokens,
+                          COUNT(*) n
+                   FROM usage WHERE ts_utc >= ?""",
+                (since_utc_iso,),
+            ).fetchone()
+        return {"cost": float(row["cost"]), "tokens": int(row["tokens"]),
+                "requests": int(row["n"])}
+
     def tool_models_since(self, tool: str, since_utc_iso: str):
         with self._cur() as cur:
             rows = cur.execute(

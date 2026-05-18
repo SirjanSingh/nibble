@@ -92,6 +92,27 @@ def test_budget_state(store, monkeypatch):
     assert st.creature_state in ("alert", "shocked")
 
 
+def test_session_window(store):
+    from datetime import datetime, timedelta, timezone
+    from nibble import budget as b
+
+    now = datetime.now(timezone.utc)
+    recent = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stale = (now - timedelta(hours=9)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    store.upsert_many([
+        Record(ts_utc=recent, tool="claude_code", model="claude-opus-4",
+               input_tokens=100, output_tokens=50, cost_usd=2.0,
+               raw_hash="s_recent"),
+        Record(ts_utc=stale, tool="claude_code", model="claude-opus-4",
+               cost_usd=9.0, raw_hash="s_stale"),
+    ])
+    st = b.compute(store)
+    assert st.session_active is True
+    assert st.session_spent == 2.0           # stale (9h ago) excluded
+    assert st.session_tokens == 150
+    assert 0 < st.session_resets_in_min <= 5 * 60
+
+
 def test_budget_default_when_unset(store):
     from nibble import budget as b
     st = b.compute(store)

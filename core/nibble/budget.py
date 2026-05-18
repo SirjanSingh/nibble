@@ -7,11 +7,12 @@ query.
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from .store import Store
 
 DEFAULT_DAILY_BUDGET = 10.0
+SESSION_HOURS = 5  # Claude Code bills in rolling 5-hour session windows
 
 
 @dataclass
@@ -25,6 +26,10 @@ class BudgetState:
     creature_state: str
     headline: str
     per_tool: list
+    session_spent: float = 0.0
+    session_tokens: int = 0
+    session_resets_in_min: int = 0
+    session_active: bool = False
 
 
 def _local_midnight_utc_iso() -> str:
@@ -41,6 +46,38 @@ def _day_fraction() -> float:
     now = datetime.now().astimezone()
     secs = now.hour * 3600 + now.minute * 60 + now.second
     return max(0.0001, min(1.0, secs / 86400.0))
+
+
+def _parse_iso(s: str):
+    for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S.%fZ"):
+        try:
+            return datetime.strptime(s, fmt).replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def _session(store: Store) -> dict:
+    """Rolling Claude-style 5h session: starts at the first activity inside
+    the trailing 5h window and resets 5h after that first activity."""
+    now = datetime.now(timezone.utc)
+    win_start = (now - timedelta(hours=SESSION_HOURS)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    first = store.first_ts_since(win_start)
+    if not first:
+        return {"spent": 0.0, "tokens": 0, "resets_in_min": 0,
+                "active": False}
+    summ = store.window_summary(first)
+    first_dt = _parse_iso(first) or now
+    resets_at = first_dt + timedelta(hours=SESSION_HOURS)
+    remaining = max(0, int((resets_at - now).total_seconds() // 60))
+    return {
+        "spent": round(summ["cost"], 4),
+        "tokens": summ["tokens"],
+        "resets_in_min": remaining,
+        "active": True,
+    }
 
 
 def compute(store: Store) -> BudgetState:
@@ -63,7 +100,12 @@ def compute(store: Store) -> BudgetState:
     on_track = projected <= budget
 
     state, headline = _derive_state(spent, budget, pct, projected, frac)
+    sess = _session(store)
     return BudgetState(
+        session_spent=sess["spent"],
+        session_tokens=sess["tokens"],
+        session_resets_in_min=sess["resets_in_min"],
+        session_active=sess["active"],
         spent_today=round(spent, 4),
         daily_budget=round(budget, 2),
         pct_used=round(pct, 1),
